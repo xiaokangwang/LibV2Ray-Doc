@@ -1,0 +1,131 @@
+digraph "libv2ray Configure File" {
+    subgraph cluster_V2RayGOJNIAPI{
+    label="V2RayGO JNI API";
+    "V2RayGO VPNSetupArg" -> "VPNSetupArg DNS"[label="d"];
+    "V2RayGO VPNSetupArg" -> "VPNSetupArg MTU"[label="m"];
+    "V2RayGO VPNSetupArg" -> "VPNSetupArg Addr"[label="a"];
+    "V2RayGO VPNSetupArg" -> "VPNSetupArg Route"[label="r"];
+
+    "V2RayGO VPNSetupArg" [label="VPNSetupArg string\n\l是一个空格分割的列表，而每项内又用逗号分割。形成关联数组结构。\n\l出度表达了每个键的含义\n\l推荐值：m,1500 a,26.26.26.1,24 r,0.0.0.0,0 d,208.67.222.222"]
+    "VPNSetupArg DNS" [label="DNS\n\l 给VPN tap设置的DNS地址"]
+    "VPNSetupArg MTU" [label="MTU\n\l 给VPN tap设置的MTU，在LibV2Ray环境下合理取值无显著影响"]
+    "VPNSetupArg Addr" [label="Addr\n\l 给VPN tap设置的IP地址，在LibV2Ray环境下合理取值无显著影响"]
+    "VPNSetupArg Route" [label="Route\n\l给VPN tap设置的路由信息，在LibV2Ray环境下合理取值无显著影响"]
+    }
+    subgraph cluster_protoConf{
+    label="Protocol Buffer";
+
+    "V2Ray Protocol Buffer Configure File"->"LibV2RayConf" [label="[?]Extension.(LibV2RayConf)"];
+
+    "LibV2RayConf" -> "VPNConfig" [label="VpnConf"];
+    "LibV2RayConf" -> "RootModeConfig" [label="RootModeConf"];
+    "LibV2RayConf" -> "EnvironmentVar" [label="Env"];
+    "LibV2RayConf" -> "NoAutoConvert" [label="NoAutoConvert"];
+
+    "EnvironmentVar" -> "EnvironmentVar->Vars" [label="Vars"];
+
+    "RootModeConfig" -> "EscortedProcess" [label="[]Escorting"];
+    "RootModeConfig" -> "UpDownScripts" [label="Scripts"];
+
+    "UpDownScripts" -> "UpScript" [label="UpScript"];
+    "UpDownScripts" -> "DownScript" [label="DownScript"];
+
+    "EscortedProcess" -> "EscortedProcess->Target" [label="Target"];
+    "EscortedProcess" -> "EscortedProcess->Args" [label="[]Args"];
+    "EscortedProcess" -> "EscortedProcess->Forgiveable" [label="Forgiveable"];
+
+    "VPNConfig" -> "VPNServiceConfig" [label="Service"];
+    "VPNConfig" -> "DNSLoopFix" [label="PreparedDomainName"];
+
+    "DNSLoopFix" -> "DNSLoopFix->TCPVersion" [label="TCPVersion"];
+    "DNSLoopFix" -> "DNSLoopFix->UDPVersion" [label="UDPVersion"];
+    "DNSLoopFix" -> "DNSLoopFix->DomainNameList" [label="[]DomainNameList"];
+
+    "VPNServiceConfig" -> "VPNServiceConfig->Target" [label="Target"]
+    "VPNServiceConfig" -> "VPNServiceConfig->Args" [label="[]Args"]
+    "VPNServiceConfig" -> "VPNServiceConfig->VPNSetupArg" [label="VPNSetupArg"]
+
+
+
+    "其他 V2Ray 设置" [style="dotted"]
+
+    "LibV2RayConf" [label="LibV2RayConf\n\lLibV2RayConf的配置信息"]
+
+    "VPNConfig" [label="VPNConfig\n\l配置在VPNService(免Root重定向网络流量)环境下使用时需要的参数。被配置在这里启动的进程在启动时会继承一个来自libv2ray的tap的fd。"]
+
+
+    "VPNServiceConfig" [label="VPNServiceConfig\n\l要伴随客户端建立VPNService启动的程序。被配置在这里启动的进程在启动时会继承一个来自libv2ray的tap的fd。"]
+
+    "VPNServiceConfig" -> "EscortedProcess" [label="类似",style="dashed"]
+
+    "RootModeConfig" [label="RootModeConfig\n\l配置在iptables(NAT,Root，透明代理)环境下使用时需要的参数。"]
+
+    "EscortedProcess" [label="EscortedProcess\n\l配置要由libV2Ray托管，随V2Ray启动而启动关闭而关闭的程序。\n\l比较典型的使用方法包括使用这个功能启动DNS转换程序。"]
+
+    "UpDownScripts" [label="UpDownScripts\n\l配置在V2Ray启动和关闭时运行的脚本"]
+
+    "UpScript" [label="UpScript string\n\l在V2Ray启动时运行的脚本，概念类似于/etc/network/if-up.d/\n\l不使用时可以设置为#none"]
+
+    "DownScript" [label="DownScript string\n\l在V2Ray关闭时运行的脚本，概念类似于/etc/network/if-down.d/\n\l不使用时可以设置为#none"]
+
+    "DNSLoopFix" [label="DNSLoopFix\n\l解决在全局代理时，DNS查询也经过V2Ray的问题的辅助功能\n\l这个功能会提前解析需要在无网络环境下解析的域名之后再启动代理\n\l会增加启动时的延迟，在没有网络的情况下的行为未定义。"]
+
+    "DNSLoopFix->TCPVersion" [label="TCPVersion string\n\l对于TCP连接要解析的IP版本号，无特殊需求填写tcp4"]
+
+    "DNSLoopFix->UDPVersion" [label="UDPVersion string\n\l对于UDP连接要解析的IP版本号，无特殊需求填写udp4"]
+
+    "DNSLoopFix->DomainNameList" [label="DomainNameList string\n\l要解析的域名列表(一般是你的VPS的域名)"]
+
+    "EscortedProcess->Target" [label="Target string\n\l要启动的进程路径(建议完整路径)"]
+    "EscortedProcess->Args" [label="Args []string\n\l启动时的参数"]
+    "EscortedProcess->Forgiveable" [label="Forgiveable bool\n\l是否在这个进程退出时不关闭V2Ray。如果为false，如果这个进程退出多次，V2Ray也会被关闭（未维护）"]
+
+    "VPNServiceConfig->Target" -> "EscortedProcess->Target" [label="等价",style="dashed"]
+
+    "VPNServiceConfig->Args" -> "EscortedProcess->Args" [label="等价",style="dashed"]
+
+    "VPNServiceConfig->VPNSetupArg" [label="在启动VPNService时传入客户端的参数"]
+    "VPNServiceConfig->VPNSetupArg" -> "V2RayGO VPNSetupArg" [label="应用至",style="dashed"]
+
+
+    "NoAutoConvert" [label="NoAutoConvert bool\n\l 是否允许自动转换，如果这个值被设定为True就会禁止libv2ray\n\l自动转换这个Protocol Buffer格式的配置文件。\n\l（目前没有实现自动转换功能）"];
+
+    "EnvironmentVar->Vars" [label="Vars map<string, string>\n\l要给由LibV2Ray自动启动的程序附加的额外的全局变量\n\l如果额外的全局变量的名字和默认会加上的全局变量的名字相同，额外的全局变量会被忽略"]
+    }
+    subgraph cluster_JSONConf{
+    label="JSON";
+    "LibV2Ray JSON 配置文件" -> "LibV2Ray 选项"[label="#libv2ray"];
+    "LibV2Ray JSON 配置文件" -> "其他 V2Ray 设置"[label="app,inbound,outbound...",style="dashed"];
+    "LibV2Ray 选项" -> "JSON enabled" [label="enabled"];
+    "LibV2Ray 选项" -> "JSON listener" [label="listener"];
+    "LibV2Ray 选项" -> "JSON render" [label="render"];
+    "LibV2Ray 选项" -> "JSON escort" [label="escort"];
+    "LibV2Ray 选项" -> "JSON vpnservice" [label="vpnservice"];
+    "LibV2Ray 选项" -> "JSON env" [label="env"];
+
+    "JSON enabled" [label="enabled bool\n\l是否启用LibV2Ray的辅助功能（默认true，false的情况已经停止维护）"]
+    "JSON listener" -> "UpDownScripts" [label="等价",style="dashed"]
+
+    "JSON listener" -> "onUp" [label="onUp"]
+    "JSON listener" -> "onDown" [label="onDown"]
+    "onUp" -> "UpScript" [label="等价",style="dashed"]
+    "onDown" -> "DownScript" [label="等价",style="dashed"]
+
+    "JSON render" [label="render\n\l已经停止维护，建议赋值[]"]
+
+    "JSON escort" -> "EscortedProcess" [label="等价",style="dashed"]
+
+    "JSON env" -> "EnvironmentVar" [label="等价",style="dashed"]
+
+    "JSON env" [label="env []string\n\l类型是=分割的关联数组，其他信息参见等价内容"]
+
+    "JSON vpnservice" [label="vpnservice\n\l参见等价内容"]
+    
+    "JSON vpnservice" -> "VPNServiceConfig"[label="等价",style="dashed"]
+    }
+    subgraph json_pb_mapping{
+    "LibV2Ray 选项" -> "LibV2RayConf" [style="dashed"]
+    }
+
+
+}
